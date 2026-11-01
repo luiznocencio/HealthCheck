@@ -60,6 +60,20 @@ object AlarmScheduler {
         setAlarm(context, dose.notificationId + SNOOZE_OFFSET, at, dose, AlarmReceiver.ACTION_SNOOZED)
     }
 
+    /** Arma o limite: se ninguém responder em [RING_LIMIT_MINUTES], o alarme para e o cuidador é avisado. */
+    fun armTimeout(context: Context, dose: DoseExtras) {
+        val am = context.getSystemService(AlarmManager::class.java)
+        val at = System.currentTimeMillis() + RING_LIMIT_MINUTES * 60_000L
+        val pi = pendingIntent(context, dose.notificationId + TIMEOUT_OFFSET, dose, AlarmReceiver.ACTION_TIMEOUT)
+        if (canScheduleExact(context)) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+        else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+    }
+
+    fun cancelTimeout(context: Context, dose: DoseExtras) {
+        val am = context.getSystemService(AlarmManager::class.java)
+        am.cancel(pendingIntent(context, dose.notificationId + TIMEOUT_OFFSET, null, AlarmReceiver.ACTION_TIMEOUT))
+    }
+
     fun cancel(context: Context, dose: DoseExtras) {
         val am = context.getSystemService(AlarmManager::class.java)
         am.cancel(pendingIntent(context, dose.notificationId, null, AlarmReceiver.ACTION_DOSE))
@@ -88,4 +102,6 @@ object AlarmScheduler {
     }
 
     private const val SNOOZE_OFFSET = 0x10000000
+    private const val TIMEOUT_OFFSET = 0x20000000
+    const val RING_LIMIT_MINUTES = 30
 }

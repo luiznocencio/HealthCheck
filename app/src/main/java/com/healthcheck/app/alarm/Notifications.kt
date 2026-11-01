@@ -21,6 +21,7 @@ object Notifications {
     const val CHANNEL_DOSES = "doses"           // reserva: notificação que repete o som
     const val CHANNEL_ALARM = "dose_alarm"      // alarme em tela cheia (o som vem do AlarmService)
     const val CHANNEL_UPDATES = "updates"
+    const val CHANNEL_CARE = "care_alerts"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -50,6 +51,11 @@ object Notifications {
             setBypassDnd(true)
             lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
         }
+        val care = NotificationChannel(CHANNEL_CARE, "Alertas de quem eu cuido", NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "Quando uma pessoa que você cuida não responde ao alarme do remédio"
+            enableVibration(true)
+        }
+        nm.createNotificationChannel(care)
         nm.createNotificationChannel(alarm)
         nm.createNotificationChannel(doses)
         nm.createNotificationChannel(updates)
@@ -147,9 +153,9 @@ object Notifications {
         }
     }
 
-    fun showUpdate(context: Context, id: Int, title: String, text: String) {
+    fun showUpdate(context: Context, id: Int, title: String, text: String, channel: String = CHANNEL_UPDATES) {
         if (!canPost(context)) return
-        val n = NotificationCompat.Builder(context, CHANNEL_UPDATES)
+        val n = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_pill)
             .setContentTitle(title)
             .setContentText(text)

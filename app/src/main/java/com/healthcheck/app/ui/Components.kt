@@ -93,7 +93,7 @@ fun DoseCard(item: DoseItem, onMark: ((String) -> Unit)?) {
                 }
                 StatusChip(item.status, late)
             }
-            if (onMark != null && item.status == null) {
+            if (onMark != null && (item.status == null || item.status == "missed")) {
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
                     OutlinedButton(onClick = { onMark("skipped") }) { Text("Pular") }
                     Spacer(Modifier.width(8.dp))
@@ -109,6 +109,7 @@ fun StatusChip(status: String?, late: Boolean) {
     val (label, icon, color) = when {
         status == "taken" -> Triple("Tomado", Icons.Filled.CheckCircle, Color(0xFF2E7D32))
         status == "skipped" -> Triple("Pulado", Icons.Filled.RemoveCircle, Color(0xFF9E9E9E))
+        status == "missed" -> Triple("Não respondeu", Icons.Filled.Schedule, Color(0xFFC62828))
         late -> Triple("Atrasado", Icons.Filled.Schedule, Color(0xFFC62828))
         else -> Triple("Pendente", Icons.Filled.Schedule, MaterialTheme.colorScheme.primary)
     }

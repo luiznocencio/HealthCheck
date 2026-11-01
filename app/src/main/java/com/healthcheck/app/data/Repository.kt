@@ -124,6 +124,23 @@ object Repository {
         }.decodeList<DoseLog>().filter { log -> log.scheduledInstant()?.let { it < end } ?: false }
     }
 
+    /** Doses que tocaram 30 min sem resposta, registradas depois de [since]. */
+    suspend fun missedSince(ownerIds: Collection<String>, since: String): List<MissedLog> {
+        if (ownerIds.isEmpty()) return emptyList()
+        return client.from("dose_logs").select {
+            filter {
+                isIn("owner_id", ownerIds.toList())
+                eq("status", "missed")
+                gt("logged_at", since)
+            }
+        }.decodeList<MissedLog>()
+    }
+
+    suspend fun medicationsByIds(ids: Collection<String>): List<Medication> {
+        if (ids.isEmpty()) return emptyList()
+        return client.from("medications").select { filter { isIn("id", ids.toList()) } }.decodeList<Medication>()
+    }
+
     suspend fun upsertLogs(logs: List<DoseLog>) {
         if (logs.isEmpty()) return
         client.from("dose_logs").upsert(logs) {

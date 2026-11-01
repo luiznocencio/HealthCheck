@@ -169,6 +169,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         DoseLogger.record(ctx, log)
         val extras = DoseExtras.from(item.medication, item.time.toString(), item.scheduledAt.toEpochMilli())
         AlarmService.dismiss(ctx, extras)
+        AlarmScheduler.cancelTimeout(ctx, extras)
         Notifications.cancel(ctx, extras.notificationId)
         _state.update { s ->
             s.copy(myDoses = s.myDoses.map {

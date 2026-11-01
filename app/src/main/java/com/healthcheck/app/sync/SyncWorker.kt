@@ -16,6 +16,7 @@ import com.healthcheck.app.alarm.Notifications
 import com.healthcheck.app.data.LocalStore
 import com.healthcheck.app.data.Repository
 import com.healthcheck.app.data.Supabase
+import com.healthcheck.app.data.parseInstant
 import java.util.concurrent.TimeUnit
 
 /**
@@ -65,6 +66,38 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             store.knownMedicationIds = meds.map { it.id }.toSet()
             store.myMedications = meds
             AlarmScheduler.rescheduleAll(context)
+
+            notifyMissedDoses(context, store, userId)
+        }
+
+        /** Cuidador: avisa quando uma pessoa que ele cuida não respondeu ao alarme em 30 min. */
+        private suspend fun notifyMissedDoses(context: Context, store: LocalStore, userId: String) {
+            val patients = Repository.links().filter { it.caregiverId == userId && it.accepted }.map { it.patientId }.toSet()
+            if (patients.isEmpty()) return
+            val since = store.missedCheckedAt
+            if (since == null) {
+                // Primeira verificação: começa a contar a partir de agora (sem avisos antigos).
+                store.missedCheckedAt = java.time.Instant.now().toString()
+                return
+            }
+            val missed = Repository.missedSince(patients, since)
+            if (missed.isEmpty()) return
+            val names = Repository.profiles(patients).associateBy { it.id }
+            val meds = Repository.medicationsByIds(missed.map { it.medicationId }.toSet()).associateBy { it.id }
+            val zone = java.time.ZoneId.systemDefault()
+            missed.forEach { log ->
+                val who = names[log.ownerId]?.displayName ?: "Uma pessoa que você cuida"
+                val med = meds[log.medicationId]?.name ?: "um remédio"
+                val time = parseInstant(log.scheduledAt)?.atZone(zone)?.toLocalTime()?.toString()?.take(5) ?: ""
+                Notifications.showUpdate(
+                    context, (log.medicationId + log.scheduledAt).hashCode(),
+                    "$who não respondeu ao alarme",
+                    "O alarme de $med${if (time.isNotEmpty()) " das $time" else ""} tocou por " +
+                        "${AlarmScheduler.RING_LIMIT_MINUTES} minutos sem resposta.",
+                    Notifications.CHANNEL_CARE,
+                )
+            }
+            store.missedCheckedAt = missed.maxByOrNull { parseInstant(it.loggedAt) ?: java.time.Instant.EPOCH }!!.loggedAt
         }
 
         fun schedulePeriodic(context: Context) {

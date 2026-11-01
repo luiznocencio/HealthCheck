@@ -24,6 +24,10 @@ private val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val dose = DoseExtras.read(intent) ?: return
+        if (intent.action == ACTION_TIMEOUT) {
+            onTimeout(context, dose)
+            return
+        }
         val store = LocalStore(context)
         val med = store.myMedications.firstOrNull { it.id == dose.medicationId }
 
@@ -37,6 +41,7 @@ class AlarmReceiver : BroadcastReceiver() {
             ActiveAlarms.add(fresh)
             Notifications.showDose(context, fresh)
         }
+        AlarmScheduler.armTimeout(context, fresh)
 
         if (intent.action == ACTION_DOSE) {
             val time = runCatching { LocalTime.parse(dose.time) }.getOrNull() ?: return
@@ -45,9 +50,25 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
+    /** 30 minutos tocando sem resposta: para o alarme, registra "não respondeu" e avisa. */
+    private fun onTimeout(context: Context, dose: DoseExtras) {
+        val job = DoseActions.handle(context, dose, DoseActions.MISSED)
+        Notifications.showUpdate(
+            context, dose.notificationId,
+            "Alarme encerrado: ${dose.name}",
+            "Ninguém confirmou a dose das ${dose.time} em ${AlarmScheduler.RING_LIMIT_MINUTES} minutos. " +
+                "Quem cuida de você será avisado. Se já tomou, marque na aba Hoje."
+        )
+        if (job != null) {
+            val pending = goAsync()
+            job.invokeOnCompletion { pending.finish() }
+        }
+    }
+
     companion object {
         const val ACTION_DOSE = "com.healthcheck.app.DOSE"
         const val ACTION_SNOOZED = "com.healthcheck.app.DOSE_SNOOZED"
+        const val ACTION_TIMEOUT = "com.healthcheck.app.DOSE_TIMEOUT"
     }
 }
 

@@ -14,6 +14,9 @@ você pode cadastrar remédios para outra pessoa (ex.: pai, mãe, avó) e os ala
 - **Alarme estilo despertador/ligação**: abre em tela cheia (inclusive com o celular bloqueado),
   toca o som de alarme em loop e vibra **até a pessoa tocar em Tomei, Adiar 10 min ou Pular**.
   Usa o volume de alarme, então toca mesmo com o celular no silencioso.
+- **Limite de 30 minutos**: se ninguém responder, o alarme para, a dose fica como **"Não respondeu"**
+  e **quem cuida da pessoa recebe um aviso** no celular (em até ~15 minutos, na próxima sincronização,
+  ou na hora se abrir o app). Se a pessoa tomou depois, ela ainda pode marcar "Tomei" na aba Hoje.
 - Alarmes continuam funcionando **offline** e são recriados ao **reiniciar o celular**.
 - Aba **Hoje** com todas as doses do dia e o status (pendente, atrasado, tomado, pulado).
 - **Compartilhamento entre usuários**:

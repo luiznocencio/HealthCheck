@@ -26,6 +26,11 @@ class LocalStore(context: Context) {
             else putString(KEY_KNOWN, json.encodeToString(SetSerializer(String.serializer()), value))
         }.apply()
 
+    /** Até quando já avisei o cuidador sobre doses sem resposta (logged_at do servidor). */
+    var missedCheckedAt: String?
+        get() = prefs.getString(KEY_MISSED, null)
+        set(value) = prefs.edit().putString(KEY_MISSED, value).apply()
+
     var scheduledAlarmKeys: Set<String>
         get() = prefs.getStringSet(KEY_ALARMS, emptySet())?.toSet() ?: emptySet()
         set(value) = prefs.edit().putStringSet(KEY_ALARMS, value).apply()
@@ -53,5 +58,6 @@ class LocalStore(context: Context) {
         private const val KEY_KNOWN = "known_ids"
         private const val KEY_ALARMS = "alarm_keys"
         private const val KEY_PENDING = "pending_logs"
+        private const val KEY_MISSED = "missed_checked_at"
     }
 }

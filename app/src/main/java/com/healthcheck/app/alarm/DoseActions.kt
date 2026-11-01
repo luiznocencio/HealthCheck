@@ -14,6 +14,7 @@ object DoseActions {
     const val TAKEN = "com.healthcheck.app.TAKEN"
     const val SNOOZE = "com.healthcheck.app.SNOOZE"
     const val SKIP = "com.healthcheck.app.SKIP"
+    const val MISSED = "com.healthcheck.app.MISSED" // limite de 30 min sem resposta
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -21,14 +22,19 @@ object DoseActions {
     fun handle(context: Context, dose: DoseExtras, action: String): Job? {
         val app = context.applicationContext
         AlarmService.dismiss(app, dose)
+        AlarmScheduler.cancelTimeout(app, dose)
         Notifications.cancel(app, dose.notificationId)
         return when (action) {
             SNOOZE -> {
                 AlarmScheduler.snooze(app, dose)
                 null
             }
-            TAKEN, SKIP -> {
-                val status = if (action == TAKEN) "taken" else "skipped"
+            TAKEN, SKIP, MISSED -> {
+                val status = when (action) {
+                    TAKEN -> "taken"
+                    SKIP -> "skipped"
+                    else -> "missed"
+                }
                 val log = DoseLog(dose.medicationId, dose.ownerId, Instant.ofEpochMilli(dose.scheduledAt).toString(), status)
                 scope.launch { DoseLogger.record(app, log) }
             }

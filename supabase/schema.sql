@@ -82,11 +82,13 @@ create table if not exists public.dose_logs (
     medication_id  uuid not null references public.medications (id) on delete cascade,
     owner_id       uuid not null references public.profiles (id) on delete cascade,
     scheduled_at   timestamptz not null,
-    status         text not null check (status in ('taken', 'skipped')),
+    status         text not null check (status in ('taken', 'skipped', 'missed')),
     logged_at      timestamptz not null default now(),
     unique (medication_id, scheduled_at)
 );
 create index if not exists dose_logs_owner_idx on public.dose_logs (owner_id, scheduled_at);
+-- 'missed' = alarme tocou 30 min sem resposta (o cuidador é avisado)
+create index if not exists dose_logs_missed_idx on public.dose_logs (owner_id, logged_at) where status = 'missed';
 
 -- ---------------------------------------------------------------------
 -- Funções auxiliares

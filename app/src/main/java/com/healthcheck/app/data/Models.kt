@@ -97,12 +97,21 @@ data class DoseLog(
     fun scheduledInstant(): Instant? = parseInstant(scheduledAt)
 }
 
+/** Registro "não respondeu" lido pelo cuidador (inclui quando foi registrado). */
+@Serializable
+data class MissedLog(
+    @SerialName("medication_id") val medicationId: String,
+    @SerialName("owner_id") val ownerId: String,
+    @SerialName("scheduled_at") val scheduledAt: String,
+    @SerialName("logged_at") val loggedAt: String,
+)
+
 /** Uma dose calculada para um dia, juntando remédio + registro (se houver). */
 data class DoseItem(
     val medication: Medication,
     val time: LocalTime,
     val scheduledAt: Instant,
-    val status: String?, // "taken", "skipped" ou null (pendente)
+    val status: String?, // "taken", "skipped", "missed" ou null (pendente)
 )
 
 fun parseInstant(value: String): Instant? =
