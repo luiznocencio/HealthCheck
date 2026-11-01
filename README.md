@@ -59,6 +59,11 @@ O backend já está criado: projeto Supabase **healthcheck** (plano gratuito, re
 2. Ao terminar, baixe o artefato **HealthCheck-apk** (um `.zip` com o `.apk` dentro).
 3. Instale nos celulares (é preciso permitir "instalar apps desconhecidos").
 
+Todos os APKs são assinados com a mesma chave (`app/release.keystore`) e cada build do GitHub
+tem um número de versão maior. Por isso uma versão nova **instala por cima** da anterior,
+sem desinstalar e sem perder nada. Quem instalou um APK antigo (anterior a essa chave)
+precisa desinstalar uma única vez.
+
 Para gerar no computador (Android Studio ou Android SDK + JDK 17): `./gradlew assembleRelease`.
 
 ### Login com Google (configuração única)
@@ -88,4 +93,4 @@ O app usa o login do Google pelo navegador. Para ativar:
 - Push instantâneo (Firebase Cloud Messaging) para o remédio chegar no outro celular no mesmo segundo.
 - Avisar o cuidador quando uma dose ficar atrasada.
 - Controle de estoque (quantos comprimidos restam).
-- Assinatura com chave própria para publicar na Play Store.
+- Chave de assinatura guardada fora do repositório para publicar na Play Store.

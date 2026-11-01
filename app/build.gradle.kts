@@ -29,19 +29,35 @@ android {
         applicationId = "com.healthcheck.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        // No GitHub Actions o número da versão sobe a cada build, para a atualização instalar por cima.
+        val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = buildNumber
+        versionName = "1.0.$buildNumber"
 
         buildConfigField("String", "SUPABASE_URL", "\"${config("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${config("SUPABASE_ANON_KEY")}\"")
     }
 
+    // Assinatura fixa: todo APK gerado (no GitHub ou no computador) usa a mesma chave,
+    // então uma versão nova instala por cima da anterior sem precisar desinstalar.
+    // A chave fica no repositório por escolha (uso pessoal). Para publicar na Play Store,
+    // gere uma chave nova e guarde-a fora do repositório.
+    signingConfigs {
+        create("fixed") {
+            storeFile = file("release.keystore")
+            storePassword = "healthcheck"
+            keyAlias = "healthcheck"
+            keyPassword = "healthcheck"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Assina o release com a chave de debug para gerar um APK instalável direto.
-            // Para publicar na Play Store, troque por uma chave de release própria.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("fixed")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("fixed")
         }
     }
     compileOptions {

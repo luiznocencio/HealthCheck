@@ -9,3 +9,6 @@ build/
 .cxx
 *.keystore
 *.jks
+
+# Chave de assinatura fixa do APK (versionada de propósito)
+!app/release.keystore
