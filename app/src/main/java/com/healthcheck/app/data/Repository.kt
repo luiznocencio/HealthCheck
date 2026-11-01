@@ -115,13 +115,13 @@ object Repository {
         val zone = ZoneId.systemDefault()
         val start = date.atStartOfDay(zone).toInstant()
         val end = date.plusDays(1).atStartOfDay(zone).toInstant()
+        // Dois filtros na mesma coluna se sobrescrevem no cliente; o limite final é aplicado aqui.
         return client.from("dose_logs").select {
             filter {
                 eq("owner_id", ownerId)
                 gte("scheduled_at", start.toString())
-                lt("scheduled_at", end.toString())
             }
-        }.decodeList<DoseLog>()
+        }.decodeList<DoseLog>().filter { log -> log.scheduledInstant()?.let { it < end } ?: false }
     }
 
     suspend fun upsertLogs(logs: List<DoseLog>) {

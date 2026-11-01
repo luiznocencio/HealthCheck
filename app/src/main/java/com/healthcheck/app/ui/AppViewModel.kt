@@ -91,7 +91,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             raw.contains("si mesmo", true) -> "Você não pode enviar convite para si mesmo."
             raw.contains("Unable to resolve host", true) || raw.contains("timeout", true) ->
                 "Sem conexão com a internet."
-            else -> raw.lineSequence().firstOrNull()?.take(200) ?: "Erro desconhecido"
+            else -> "Erro: " + (raw.lineSequence().firstOrNull()?.take(300) ?: e.javaClass.simpleName)
         }
     }
 
@@ -100,7 +100,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(busy = true) }
             try {
                 block()
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                android.util.Log.e("HealthCheck", "Erro", e)
                 say(friendly(e))
             } finally {
                 _state.update { it.copy(busy = false) }
@@ -216,7 +219,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (ownerId == _state.value.me?.id) _state.value.myMeds else _person.value.meds
 
     fun saveMedication(med: Medication, isNew: Boolean, onDone: () -> Unit) = launchBusy {
-        Repository.saveMedication(med, isNew)
+        val userId = Repository.currentUserId() ?: error("Sessão expirada. Saia e entre novamente.")
+        val toSave = if (isNew) med.copy(createdBy = userId) else med
+        Repository.saveMedication(toSave, isNew)
         afterChange(med.ownerId)
         say(if (isNew) "Remédio cadastrado!" else "Remédio atualizado!")
         onDone()

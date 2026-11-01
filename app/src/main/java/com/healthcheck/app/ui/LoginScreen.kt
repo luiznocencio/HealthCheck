@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -131,7 +132,9 @@ fun NotConfiguredScreen() {
 fun MessageEffect(vm: AppViewModel, state: UiState, snackbar: SnackbarHostState) {
     LaunchedEffect(state.message) {
         val msg = state.message ?: return@LaunchedEffect
+        // Mostra primeiro e só depois limpa: limpar antes reiniciava este efeito
+        // e cancelava a mensagem antes de ela aparecer.
+        snackbar.showSnackbar(msg, withDismissAction = true, duration = SnackbarDuration.Long)
         vm.consumeMessage()
-        snackbar.showSnackbar(msg)
     }
 }

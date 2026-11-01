@@ -201,7 +201,7 @@ fun MedicationEditScreen(
             Spacer(Modifier.height(8.dp))
             Button(
                 onClick = {
-                    val myId = state.me?.id ?: return@Button
+                    val myId = state.me?.id ?: ""
                     val med = Medication(
                         id = existing?.id ?: UUID.randomUUID().toString(),
                         ownerId = ownerId,
