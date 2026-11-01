@@ -206,3 +206,13 @@ create policy doses_insert on public.dose_logs for insert with check (owner_id =
 drop policy if exists doses_update on public.dose_logs;
 create policy doses_update on public.dose_logs for update
     using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+-- ---------------------------------------------------------------------
+-- Permissões das funções: visitantes sem login não chamam nada;
+-- handle_new_user só roda pelo gatilho.
+-- ---------------------------------------------------------------------
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.can_manage(uuid) from public, anon;
+revoke execute on function public.request_care_link(text) from public, anon;
+grant execute on function public.can_manage(uuid) to authenticated;
+grant execute on function public.request_care_link(text) to authenticated;
