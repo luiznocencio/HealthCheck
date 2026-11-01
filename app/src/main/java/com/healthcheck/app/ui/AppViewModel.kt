@@ -114,6 +114,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         Repository.signIn(email, password)
     }
 
+    fun signInWithGoogle() = launchBusy {
+        Repository.signInWithGoogle()
+    }
+
     fun signUp(name: String, email: String, password: String) = launchBusy {
         Repository.signUp(name, email, password)
         if (Repository.currentUserId() == null) {

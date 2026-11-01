@@ -45,36 +45,37 @@ supabase/schema.sql   # tabelas, permissões (RLS) e funções do banco
 
 ## Como configurar
 
-### 1. Criar o backend (Supabase — plano gratuito serve)
-
-1. Crie um projeto em <https://supabase.com>.
-2. Abra **SQL Editor**, cole todo o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) e execute.
-3. Em **Authentication → Sign In / Providers → Email**, recomendo **desativar "Confirm email"**
-   para que a pessoa possa entrar logo após criar a conta (opcional).
-4. Em **Project Settings → API**, copie a **Project URL** e a chave **anon / publishable**.
+O backend já está criado: projeto Supabase **healthcheck** (plano gratuito, região São Paulo),
+`https://fdjfgswjpitlzavbniez.supabase.co`. A URL e a chave pública (*anon*) já estão no
+`app/build.gradle.kts`, então o APK gerado pelo GitHub Actions já se conecta ao banco.
 
 > A chave *anon* é pública por natureza (vai dentro do app). A segurança é garantida pelas
-> regras de RLS do `schema.sql`: cada pessoa só vê os próprios dados e os de quem
-> aceitou o vínculo de cuidado.
+> regras de RLS do [`supabase/schema.sql`](supabase/schema.sql): cada pessoa só vê os próprios
+> dados e os de quem aceitou o vínculo de cuidado.
 
-### 2. Gerar o APK pelo GitHub (sem instalar nada)
+### Gerar o APK
 
-1. No GitHub, vá em **Settings → Secrets and variables → Actions → New repository secret** e crie:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-2. Vá em **Actions → Build APK → Run workflow** (ou faça um push).
-3. Ao terminar, baixe o artefato **HealthCheck-apk** (é um `.zip` com o `.apk` dentro).
-4. Envie o APK para os celulares e instale (é preciso permitir "instalar apps desconhecidos").
+1. No GitHub, abra **Actions → Build APK** (roda sozinho a cada push, ou use **Run workflow**).
+2. Ao terminar, baixe o artefato **HealthCheck-apk** (um `.zip` com o `.apk` dentro).
+3. Instale nos celulares (é preciso permitir "instalar apps desconhecidos").
 
-### 2b. (Alternativa) Gerar o APK no computador
+Para gerar no computador (Android Studio ou Android SDK + JDK 17): `./gradlew assembleRelease`.
 
-Requer Android Studio (ou Android SDK + JDK 17):
+### Login com Google (configuração única)
 
-```bash
-cp local.properties.example local.properties   # e preencha os valores
-./gradlew assembleRelease
-# APK em app/build/outputs/apk/release/app-release.apk
-```
+O app usa o login do Google pelo navegador. Para ativar:
+
+1. No [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+   - configure a **Tela de consentimento OAuth** (tipo *Externo*, nome "HealthCheck", seu e-mail);
+   - em **Credenciais → Criar credenciais → ID do cliente OAuth**, escolha **Aplicativo da Web**;
+   - em **URIs de redirecionamento autorizados**, adicione
+     `https://fdjfgswjpitlzavbniez.supabase.co/auth/v1/callback`;
+   - copie o **ID do cliente** e a **Chave secreta do cliente**.
+2. No Supabase, em **Authentication → Sign In / Providers → Google**: ative, cole o ID e a chave secreta e salve.
+3. No Supabase, em **Authentication → URL Configuration → Redirect URLs**, adicione
+   `healthcheck://login-callback`.
+4. (Opcional) Em **Authentication → Sign In / Providers → Email**, desative **Confirm email**
+   para quem usa e-mail e senha poder entrar logo após criar a conta.
 
 ## Dicas para os alarmes tocarem sempre
 

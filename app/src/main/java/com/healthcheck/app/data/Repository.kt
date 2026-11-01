@@ -1,6 +1,7 @@
 package com.healthcheck.app.data
 
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -33,6 +34,11 @@ object Repository {
             this.email = email.trim()
             this.password = password
         }
+    }
+
+    /** Abre o navegador para entrar com a conta Google; o app recebe o retorno via deep link. */
+    suspend fun signInWithGoogle() {
+        client.auth.signInWith(Google)
     }
 
     suspend fun signOut() {

@@ -21,7 +21,7 @@ jobs:
 
       - name: Build APK
         env:
-          # Configure em Settings > Secrets and variables > Actions
+          # Opcional: sobrescreve o projeto Supabase padrão definido em app/build.gradle.kts
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |

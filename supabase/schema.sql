@@ -21,7 +21,11 @@ security definer set search_path = public
 as $$
 begin
     insert into public.profiles (id, name, email)
-    values (new.id, coalesce(new.raw_user_meta_data ->> 'name', ''), lower(new.email))
+    values (
+        new.id,
+        coalesce(new.raw_user_meta_data ->> 'name', new.raw_user_meta_data ->> 'full_name', ''),
+        lower(new.email)
+    )
     on conflict (id) do nothing;
     return new;
 end;
@@ -130,7 +134,9 @@ $$;
 
 -- Mantém updated_at atualizado
 create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql
+set search_path = public
+as $$
 begin
     new.updated_at = now();
     return new;

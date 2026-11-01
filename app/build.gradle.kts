@@ -12,8 +12,14 @@ val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
+// Valores padrão do projeto Supabase "healthcheck". A chave anon é pública por natureza
+// (vai dentro do APK); a proteção dos dados é feita pelas regras RLS do banco.
+val defaults = mapOf(
+    "SUPABASE_URL" to "https://fdjfgswjpitlzavbniez.supabase.co",
+    "SUPABASE_ANON_KEY" to "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkamZnc3dqcGl0bHphdmJuaWV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1Mzc4MzgsImV4cCI6MjEwOTExMzgzOH0.0obkr8LObZiuYeXUd0lMRZZsMOrnII3mK4oFHxWl9-A",
+)
 fun config(name: String): String =
-    (localProps.getProperty(name) ?: System.getenv(name) ?: "").trim()
+    (localProps.getProperty(name) ?: System.getenv(name)?.takeIf { it.isNotBlank() } ?: defaults[name] ?: "").trim()
 
 android {
     namespace = "com.healthcheck.app"

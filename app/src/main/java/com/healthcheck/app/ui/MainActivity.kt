@@ -1,5 +1,6 @@
 package com.healthcheck.app.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,15 +17,30 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.healthcheck.app.data.Supabase
+import io.github.jan.supabase.auth.handleDeeplinks
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleAuthDeeplink(intent)
         setContent {
             HealthTheme {
                 App()
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleAuthDeeplink(intent)
+    }
+
+    /** Conclui o login com Google quando o navegador volta para healthcheck://login-callback. */
+    private fun handleAuthDeeplink(intent: Intent?) {
+        if (intent?.data?.scheme == "healthcheck" && Supabase.isConfigured) {
+            Supabase.client.handleDeeplinks(intent)
         }
     }
 }

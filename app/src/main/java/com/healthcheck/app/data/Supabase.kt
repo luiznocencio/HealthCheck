@@ -3,6 +3,7 @@ package com.healthcheck.app.data
 import com.healthcheck.app.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.serializer.KotlinXSerializer
@@ -21,7 +22,12 @@ object Supabase {
                 ignoreUnknownKeys = true
                 encodeDefaults = true
             })
-            install(Auth)
+            install(Auth) {
+                // Retorno do login com Google pelo navegador: healthcheck://login-callback
+                scheme = "healthcheck"
+                host = "login-callback"
+                flowType = FlowType.PKCE
+            }
             install(Postgrest)
         }
     }
