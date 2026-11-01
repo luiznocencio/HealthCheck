@@ -141,9 +141,11 @@ private fun PermissionBanners() {
     val context = LocalContext.current
     var notificationsOk by remember { mutableStateOf(Notifications.canPost(context)) }
     var exactOk by remember { mutableStateOf(AlarmScheduler.canScheduleExact(context)) }
+    var fullScreenOk by remember { mutableStateOf(Notifications.canUseFullScreen(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         notificationsOk = Notifications.canPost(context)
         exactOk = AlarmScheduler.canScheduleExact(context)
+        fullScreenOk = Notifications.canUseFullScreen(context)
         if (exactOk) AlarmScheduler.rescheduleAll(context)
     }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -152,6 +154,13 @@ private fun PermissionBanners() {
     if (!notificationsOk && Build.VERSION.SDK_INT >= 33) {
         Banner("Permita as notificações para receber os alarmes dos remédios.", "Permitir") {
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    if (!fullScreenOk && Build.VERSION.SDK_INT >= 34) {
+        Banner("Permita \"Notificações em tela cheia\" para o alarme aparecer como uma ligação.", "Abrir") {
+            context.startActivity(
+                Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}"))
+            )
         }
     }
     if (!exactOk && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

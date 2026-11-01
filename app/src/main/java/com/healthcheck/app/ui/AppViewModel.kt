@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthcheck.app.alarm.AlarmScheduler
+import com.healthcheck.app.alarm.AlarmService
 import com.healthcheck.app.alarm.DoseExtras
 import com.healthcheck.app.alarm.DoseLogger
 import com.healthcheck.app.alarm.Notifications
@@ -166,7 +167,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val ctx = getApplication<Application>()
         val log = Repository.newLog(item.medication, item.scheduledAt, status)
         DoseLogger.record(ctx, log)
-        Notifications.cancel(ctx, DoseExtras.from(item.medication, item.time.toString(), 0L).notificationId)
+        val extras = DoseExtras.from(item.medication, item.time.toString(), item.scheduledAt.toEpochMilli())
+        AlarmService.dismiss(ctx, extras)
+        Notifications.cancel(ctx, extras.notificationId)
         _state.update { s ->
             s.copy(myDoses = s.myDoses.map {
                 if (it.medication.id == item.medication.id && it.scheduledAt == item.scheduledAt) it.copy(status = status) else it

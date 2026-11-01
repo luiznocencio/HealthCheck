@@ -30,7 +30,13 @@ class AlarmReceiver : BroadcastReceiver() {
         // Remédio removido/desativado desde o agendamento: não avisa.
         if (med == null || !med.active) return
 
-        Notifications.showDose(context, dose.copy(name = med.name, dosage = med.dosage, notes = med.notes))
+        val fresh = dose.copy(name = med.name, dosage = med.dosage, notes = med.notes)
+        // Toca como despertador até a pessoa responder; se o Android bloquear o serviço,
+        // usa uma notificação que repete o som até ser tocada.
+        if (!AlarmService.ring(context, fresh)) {
+            ActiveAlarms.add(fresh)
+            Notifications.showDose(context, fresh)
+        }
 
         if (intent.action == ACTION_DOSE) {
             val time = runCatching { LocalTime.parse(dose.time) }.getOrNull() ?: return
@@ -49,28 +55,10 @@ class AlarmReceiver : BroadcastReceiver() {
 class DoseActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val dose = DoseExtras.read(intent) ?: return
-        Notifications.cancel(context, dose.notificationId)
-        when (intent.action) {
-            ACTION_SNOOZE -> AlarmScheduler.snooze(context, dose)
-            ACTION_TAKEN, ACTION_SKIP -> {
-                val status = if (intent.action == ACTION_TAKEN) "taken" else "skipped"
-                val log = DoseLog(dose.medicationId, dose.ownerId, Instant.ofEpochMilli(dose.scheduledAt).toString(), status)
-                val pending = goAsync()
-                receiverScope.launch {
-                    try {
-                        DoseLogger.record(context, log)
-                    } finally {
-                        pending.finish()
-                    }
-                }
-            }
-        }
-    }
-
-    companion object {
-        const val ACTION_TAKEN = "com.healthcheck.app.TAKEN"
-        const val ACTION_SNOOZE = "com.healthcheck.app.SNOOZE"
-        const val ACTION_SKIP = "com.healthcheck.app.SKIP"
+        val action = intent.action ?: return
+        val job = DoseActions.handle(context, dose, action) ?: return
+        val pending = goAsync()
+        job.invokeOnCompletion { pending.finish() }
     }
 }
 

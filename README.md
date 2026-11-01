@@ -11,7 +11,9 @@ você pode cadastrar remédios para outra pessoa (ex.: pai, mãe, avó) e os ala
   - quais dias da semana (todos os dias, segunda a sexta ou dias específicos);
   - duração do tratamento em dias (ou uso contínuo);
   - dose e observações (ex.: "1 comprimido", "tomar após o almoço").
-- **Notificação com som de alarme** e botões **Tomei**, **Adiar 10 min** e **Pular**.
+- **Alarme estilo despertador/ligação**: abre em tela cheia (inclusive com o celular bloqueado),
+  toca o som de alarme em loop e vibra **até a pessoa tocar em Tomei, Adiar 10 min ou Pular**.
+  Usa o volume de alarme, então toca mesmo com o celular no silencioso.
 - Alarmes continuam funcionando **offline** e são recriados ao **reiniciar o celular**.
 - Aba **Hoje** com todas as doses do dia e o status (pendente, atrasado, tomado, pulado).
 - **Compartilhamento entre usuários**:
@@ -84,7 +86,9 @@ O app usa o login do Google pelo navegador. Para ativar:
 
 ## Dicas para os alarmes tocarem sempre
 
-- Ao abrir o app, permita **Notificações** e **Alarmes e lembretes** (o app mostra um aviso se faltar).
+- Ao abrir o app, permita **Notificações**, **Alarmes e lembretes** e, no Android 14 ou mais novo,
+  **Notificações em tela cheia** (o app mostra um aviso se faltar alguma).
+- Deixe o **volume de alarme** do celular alto: é ele que o HealthCheck usa.
 - Em alguns celulares (Xiaomi, Samsung, Motorola…), desative a **otimização de bateria** para o
   HealthCheck em *Configurações → Apps → HealthCheck → Bateria → Sem restrições*.
 
