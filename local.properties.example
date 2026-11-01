@@ -1,0 +1,4 @@
+# Copie para local.properties e preencha com os dados do seu projeto Supabase
+# (Project Settings > API)
+SUPABASE_URL=https://SEU-PROJETO.supabase.co
+SUPABASE_ANON_KEY=sua-chave-anon-publica
