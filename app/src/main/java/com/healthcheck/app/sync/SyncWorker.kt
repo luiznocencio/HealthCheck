@@ -17,6 +17,7 @@ import com.healthcheck.app.data.LocalStore
 import com.healthcheck.app.data.Repository
 import com.healthcheck.app.data.Supabase
 import com.healthcheck.app.data.parseInstant
+import com.healthcheck.app.update.Updater
 import java.util.concurrent.TimeUnit
 
 /**
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        notifyUpdate(applicationContext)
         if (!Supabase.isConfigured) return Result.success()
         return try {
             sync(applicationContext)
@@ -98,6 +100,19 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 )
             }
             store.missedCheckedAt = missed.maxByOrNull { parseInstant(it.loggedAt) ?: java.time.Instant.EPOCH }!!.loggedAt
+        }
+
+        /** Avisa (uma vez por versão) que há atualização; tocar abre o app com o botão "Atualizar". */
+        private suspend fun notifyUpdate(context: Context) {
+            val release = Updater.checkForUpdate() ?: return
+            val store = LocalStore(context)
+            if (store.notifiedUpdateCode >= release.versionCode) return
+            store.notifiedUpdateCode = release.versionCode
+            Notifications.showUpdate(
+                context, 0x7FFF0002,
+                "Atualização do HealthCheck disponível",
+                "Versão ${release.versionName}. Toque para abrir o app e atualizar.",
+            )
         }
 
         fun schedulePeriodic(context: Context) {

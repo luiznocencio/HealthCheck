@@ -58,6 +58,15 @@ O backend já está criado: projeto Supabase **healthcheck** (plano gratuito, re
 > regras de RLS do [`supabase/schema.sql`](supabase/schema.sql): cada pessoa só vê os próprios
 > dados e os de quem aceitou o vínculo de cuidado.
 
+### Instalar e atualizar
+
+- **Link fixo do APK mais recente** (pode mandar para qualquer pessoa, não precisa de conta no GitHub):
+  <https://github.com/luiznocencio/HealthCheck/releases/latest/download/HealthCheck.apk>
+- **Atualização automática**: a cada push na branch principal, o GitHub Actions publica um *Release*
+  público. O app verifica ao abrir (e em segundo plano) e mostra **"Nova versão disponível → Atualizar"**:
+  baixa o APK e abre a instalação do Android; a pessoa só confirma. Na primeira vez o Android pede
+  para permitir **"instalar apps desta fonte"** para o HealthCheck.
+
 ### Gerar o APK
 
 1. No GitHub, abra **Actions → Build APK** (roda sozinho a cada push, ou use **Run workflow**).

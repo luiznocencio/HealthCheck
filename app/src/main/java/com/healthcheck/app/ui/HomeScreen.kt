@@ -117,6 +117,7 @@ fun HomeScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             PermissionBanners()
+            UpdateBanner()
             when (tab) {
                 0 -> TodayTab(vm, state)
                 1 -> MedsTab(state) { med -> myId?.let { onEditMedication(it, med) } }

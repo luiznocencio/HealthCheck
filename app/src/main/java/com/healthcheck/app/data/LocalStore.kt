@@ -31,6 +31,11 @@ class LocalStore(context: Context) {
         get() = prefs.getString(KEY_MISSED, null)
         set(value) = prefs.edit().putString(KEY_MISSED, value).apply()
 
+    /** Última versão nova já avisada por notificação (para não repetir). */
+    var notifiedUpdateCode: Int
+        get() = prefs.getInt(KEY_UPDATE, 0)
+        set(value) = prefs.edit().putInt(KEY_UPDATE, value).apply()
+
     var scheduledAlarmKeys: Set<String>
         get() = prefs.getStringSet(KEY_ALARMS, emptySet())?.toSet() ?: emptySet()
         set(value) = prefs.edit().putStringSet(KEY_ALARMS, value).apply()
@@ -59,5 +64,6 @@ class LocalStore(context: Context) {
         private const val KEY_ALARMS = "alarm_keys"
         private const val KEY_PENDING = "pending_logs"
         private const val KEY_MISSED = "missed_checked_at"
+        private const val KEY_UPDATE = "notified_update_code"
     }
 }
