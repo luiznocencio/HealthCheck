@@ -93,10 +93,21 @@ fun DoseCard(item: DoseItem, onMark: ((String) -> Unit)?) {
                 }
                 StatusChip(item.status, late)
             }
-            if (onMark != null && (item.status == null || item.status == "missed")) {
+            // Pulada ou sem resposta continua pendente: dá para concluir depois com "Tomei".
+            if (onMark != null && item.status != "taken") {
+                if (item.status == "skipped" || item.status == "missed") {
+                    Text(
+                        "Ainda pendente — se tomou depois, toque em \"Tomei\".",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
-                    OutlinedButton(onClick = { onMark("skipped") }) { Text("Pular") }
-                    Spacer(Modifier.width(8.dp))
+                    if (item.status == null) {
+                        OutlinedButton(onClick = { onMark("skipped") }) { Text("Pular") }
+                        Spacer(Modifier.width(8.dp))
+                    }
                     FilledTonalButton(onClick = { onMark("taken") }) { Text("Tomei") }
                 }
             }
@@ -108,7 +119,7 @@ fun DoseCard(item: DoseItem, onMark: ((String) -> Unit)?) {
 fun StatusChip(status: String?, late: Boolean) {
     val (label, icon, color) = when {
         status == "taken" -> Triple("Tomado", Icons.Filled.CheckCircle, Color(0xFF2E7D32))
-        status == "skipped" -> Triple("Pulado", Icons.Filled.RemoveCircle, Color(0xFF9E9E9E))
+        status == "skipped" -> Triple("Pulado", Icons.Filled.RemoveCircle, Color(0xFFEF6C00))
         status == "missed" -> Triple("Não respondeu", Icons.Filled.Schedule, Color(0xFFC62828))
         late -> Triple("Atrasado", Icons.Filled.Schedule, Color(0xFFC62828))
         else -> Triple("Pendente", Icons.Filled.Schedule, MaterialTheme.colorScheme.primary)
