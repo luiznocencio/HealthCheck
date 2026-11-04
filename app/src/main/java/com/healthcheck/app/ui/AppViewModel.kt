@@ -30,6 +30,7 @@ enum class AuthState { Loading, LoggedOut, LoggedIn }
 data class UiState(
     val auth: AuthState = AuthState.Loading,
     val busy: Boolean = false,
+    val refreshing: Boolean = false,
     val me: Profile? = null,
     val myMeds: List<Medication> = emptyList(),
     val myDoses: List<DoseItem> = emptyList(),
@@ -140,7 +141,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------------- Dados ----------------
 
-    fun refresh() = launchBusy {
+    private var refreshJob: kotlinx.coroutines.Job? = null
+
+    /** Recarrega tudo do servidor. Chamado ao abrir o app e ao puxar a tela para baixo. */
+    fun refresh() {
+        if (refreshJob?.isActive == true) return
+        refreshJob = viewModelScope.launch {
+            _state.update { it.copy(refreshing = true) }
+            try {
+                doRefresh()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                say(friendly(e))
+            } finally {
+                _state.update { it.copy(refreshing = false) }
+            }
+        }
+    }
+
+    private suspend fun doRefresh() {
         val ctx = getApplication<Application>()
         val me = Repository.myProfile()
         // Sincroniza meus remédios (cache local + alarmes)
@@ -206,7 +226,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ---------------- Remédios de outra pessoa ----------------
 
     fun loadPerson(personId: String) {
-        _person.value = PersonState(personId = personId, loading = true)
+        _person.update {
+            if (it.personId == personId) it.copy(loading = true) else PersonState(personId = personId, loading = true)
+        }
         viewModelScope.launch {
             try {
                 val meds = Repository.medications(personId)

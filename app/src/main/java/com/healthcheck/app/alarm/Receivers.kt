@@ -34,6 +34,12 @@ class AlarmReceiver : BroadcastReceiver() {
         // Remédio removido/desativado desde o agendamento: não avisa.
         if (med == null || !med.active) return
 
+        // Já marcada como tomada antes do horário: não toca, só agenda a próxima.
+        if (store.isTaken(dose.medicationId, dose.scheduledAt)) {
+            scheduleNext(context, intent, dose, med)
+            return
+        }
+
         val fresh = dose.copy(name = med.name, dosage = med.dosage, notes = med.notes)
         // Toca como despertador até a pessoa responder; se o Android bloquear o serviço,
         // usa uma notificação que repete o som até ser tocada.
@@ -42,12 +48,14 @@ class AlarmReceiver : BroadcastReceiver() {
             Notifications.showDose(context, fresh)
         }
         AlarmScheduler.armTimeout(context, fresh)
+        scheduleNext(context, intent, dose, med)
+    }
 
-        if (intent.action == ACTION_DOSE) {
-            val time = runCatching { LocalTime.parse(dose.time) }.getOrNull() ?: return
-            val after = LocalDateTime.ofInstant(Instant.ofEpochMilli(dose.scheduledAt), ZoneId.systemDefault())
-            AlarmScheduler.scheduleSlot(context, med, time, maxOf(after, LocalDateTime.now()))
-        }
+    private fun scheduleNext(context: Context, intent: Intent, dose: DoseExtras, med: com.healthcheck.app.data.Medication) {
+        if (intent.action != ACTION_DOSE) return
+        val time = runCatching { LocalTime.parse(dose.time) }.getOrNull() ?: return
+        val after = LocalDateTime.ofInstant(Instant.ofEpochMilli(dose.scheduledAt), ZoneId.systemDefault())
+        AlarmScheduler.scheduleSlot(context, med, time, maxOf(after, LocalDateTime.now()))
     }
 
     /** 30 minutos tocando sem resposta: para o alarme, registra "não respondeu" e avisa. */
@@ -95,6 +103,7 @@ object DoseLogger {
     /** Tenta enviar o registro; se estiver offline, guarda para enviar na próxima sincronização. */
     suspend fun record(context: Context, log: DoseLog) {
         val store = LocalStore(context)
+        store.addRecentLog(log)
         store.addPendingLog(log)
         if (!Supabase.isConfigured) return
         val sent = withTimeoutOrNull(8_000) {

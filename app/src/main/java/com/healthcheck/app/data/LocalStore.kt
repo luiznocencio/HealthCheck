@@ -44,6 +44,29 @@ class LocalStore(context: Context) {
         get() = decode(prefs.getString(KEY_PENDING, null), ListSerializer(DoseLog.serializer())) ?: emptyList()
         set(value) = prefs.edit().putString(KEY_PENDING, json.encodeToString(ListSerializer(DoseLog.serializer()), value)).apply()
 
+    /** Registros recentes (servidor + este aparelho), para não tocar dose já tomada. */
+    var recentLogs: List<DoseLog>
+        get() = decode(prefs.getString(KEY_RECENT, null), ListSerializer(DoseLog.serializer())) ?: emptyList()
+        set(value) {
+            val cutoff = java.time.Instant.now().minus(java.time.Duration.ofDays(2))
+            val kept = value
+                .filter { (it.scheduledInstant() ?: java.time.Instant.EPOCH).isAfter(cutoff) }
+                .associateBy { it.medicationId to it.scheduledInstant()?.toEpochMilli() }
+                .values.toList()
+            prefs.edit().putString(KEY_RECENT, json.encodeToString(ListSerializer(DoseLog.serializer()), kept)).apply()
+        }
+
+    @Synchronized
+    fun addRecentLog(log: DoseLog) {
+        recentLogs = recentLogs + log
+    }
+
+    /** A dose já foi marcada como tomada (neste aparelho ou vinda do servidor)? */
+    fun isTaken(medicationId: String, scheduledAtMillis: Long): Boolean =
+        (recentLogs + pendingLogs).lastOrNull {
+            it.medicationId == medicationId && it.scheduledInstant()?.toEpochMilli() == scheduledAtMillis
+        }?.status == "taken"
+
     @Synchronized
     fun addPendingLog(log: DoseLog) {
         pendingLogs = pendingLogs.filterNot {
@@ -63,6 +86,7 @@ class LocalStore(context: Context) {
         private const val KEY_KNOWN = "known_ids"
         private const val KEY_ALARMS = "alarm_keys"
         private const val KEY_PENDING = "pending_logs"
+        private const val KEY_RECENT = "recent_logs"
         private const val KEY_MISSED = "missed_checked_at"
         private const val KEY_UPDATE = "notified_update_code"
     }

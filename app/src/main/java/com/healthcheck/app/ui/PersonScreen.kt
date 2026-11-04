@@ -21,6 +21,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,7 +45,8 @@ fun PersonScreen(
     val person by vm.person.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     MessageEffect(vm, state, snackbar)
-    LaunchedEffect(personId) { vm.loadPerson(personId) }
+    // Recarrega ao abrir a tela e sempre que o app volta para a frente
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.loadPerson(personId) }
     val name = state.people[personId]?.displayName ?: "Pessoa"
 
     Scaffold(
@@ -63,8 +67,13 @@ fun PersonScreen(
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (person.loading || state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp)) {
+            if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            PullToRefreshBox(
+                isRefreshing = person.loading,
+                onRefresh = { vm.loadPerson(personId) },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp)) {
                 item {
                     val done = person.doses.count { it.status == "taken" }
                     SectionTitle("Doses de hoje ($done de ${person.doses.size} tomadas)")
@@ -77,6 +86,7 @@ fun PersonScreen(
                     item { EmptyHint("Nenhum remédio cadastrado. Toque no botão abaixo para adicionar.") }
                 }
                 items(person.meds, key = { "m" + it.id }) { med -> MedicationCard(med) { onEditMedication(med.id) } }
+            }
             }
         }
     }

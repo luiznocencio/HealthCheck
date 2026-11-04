@@ -67,6 +67,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
             store.knownMedicationIds = meds.map { it.id }.toSet()
             store.myMedications = meds
+            // Registros de hoje (inclusive de outro aparelho), para não tocar dose já tomada.
+            store.recentLogs = store.recentLogs + Repository.logsForDay(userId)
             AlarmScheduler.rescheduleAll(context)
 
             notifyMissedDoses(context, store, userId)

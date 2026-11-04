@@ -47,6 +47,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -118,10 +119,17 @@ fun HomeScreen(
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             PermissionBanners()
             UpdateBanner()
-            when (tab) {
-                0 -> TodayTab(vm, state)
-                1 -> MedsTab(state) { med -> myId?.let { onEditMedication(it, med) } }
-                2 -> PeopleTab(vm, state, onOpenPerson)
+            // Puxe a lista para baixo para atualizar
+            PullToRefreshBox(
+                isRefreshing = state.refreshing,
+                onRefresh = { vm.refresh() },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when (tab) {
+                    0 -> TodayTab(vm, state)
+                    1 -> MedsTab(state) { med -> myId?.let { onEditMedication(it, med) } }
+                    2 -> PeopleTab(vm, state, onOpenPerson)
+                }
             }
         }
     }
@@ -188,7 +196,7 @@ private fun Banner(text: String, action: String, onClick: () -> Unit) {
 
 @Composable
 private fun TodayTab(vm: AppViewModel, state: UiState) {
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         item {
             val done = state.myDoses.count { it.status == "taken" }
             SectionTitle("Doses de hoje ($done de ${state.myDoses.size} tomadas)", Modifier.padding(top = 0.dp))
@@ -204,7 +212,7 @@ private fun TodayTab(vm: AppViewModel, state: UiState) {
 
 @Composable
 private fun MedsTab(state: UiState, onEdit: (String?) -> Unit) {
-    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)) {
         if (state.myMeds.isEmpty()) {
             item { EmptyHint("Você ainda não tem remédios cadastrados. Toque em \"Novo remédio\".") }
         }
@@ -235,7 +243,7 @@ private fun PeopleTab(vm: AppViewModel, state: UiState, onOpenPerson: (String) -
     val caresForMe = state.links.filter { it.patientId == myId && it.accepted }
     fun nameOf(id: String) = state.people[id]?.displayName ?: "Usuário"
 
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
         item {
             SectionTitle("Cuidar de alguém", Modifier.padding(top = 0.dp))
             Text(
