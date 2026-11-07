@@ -83,6 +83,17 @@ fun MedicationEditScreen(
                 ?.let { (ChronoUnit.DAYS.between(startDate, it) + 1).toString() } ?: ""
         )
     }
+    // Fim do tratamento: 0 = uso contínuo, 1 = por dias, 2 = por quantidade de doses
+    var endMode by remember {
+        mutableStateOf(
+            when {
+                existing?.totalDoses != null -> 2
+                existing?.endDate != null -> 1
+                else -> 0
+            }
+        )
+    }
+    var totalDoses by remember { mutableStateOf(existing?.totalDoses?.toString() ?: "") }
     var timesPerDay by remember { mutableStateOf(times.size.coerceIn(1, 6)) }
     var editingTime by remember { mutableStateOf<Int?>(null) } // índice; -1 = novo horário
     var confirmDelete by remember { mutableStateOf(false) }
@@ -178,20 +189,57 @@ fun MedicationEditScreen(
                 }
             }
 
-            SectionTitle("Duração do tratamento")
-            OutlinedTextField(
-                duration,
-                { duration = it.filter(Char::isDigit).take(4) },
-                label = { Text("Quantidade de dias (vazio = uso contínuo)") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
+            SectionTitle("Quando o tratamento termina?")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = endMode == 0, onClick = { endMode = 0 }, label = { Text("Uso contínuo") })
+                FilterChip(selected = endMode == 1, onClick = { endMode = 1 }, label = { Text("Após X dias") })
+                FilterChip(selected = endMode == 2, onClick = { endMode = 2 }, label = { Text("Após X doses") })
+            }
+            if (endMode == 1) {
+                OutlinedTextField(
+                    duration,
+                    { duration = it.filter(Char::isDigit).take(4) },
+                    label = { Text("Quantidade de dias") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (endMode == 2) {
+                OutlinedTextField(
+                    totalDoses,
+                    { totalDoses = it.filter(Char::isDigit).take(4) },
+                    label = { Text("Quantidade total de doses (ex: 14)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            val endDate = if (endMode == 1) duration.toLongOrNull()?.takeIf { it > 0 }?.let { startDate.plusDays(it - 1) } else null
+            val total = if (endMode == 2) totalDoses.toIntOrNull()?.takeIf { it > 0 } else null
+            val preview = Medication(
+                id = "", ownerId = "", createdBy = "", name = "",
+                times = times.distinct().sorted().map { it.toString() },
+                daysOfWeek = days.distinct().sorted(),
+                startDate = startDate.toString(),
+                endDate = endDate?.toString(),
+                totalDoses = total,
             )
-            val endDate = duration.toLongOrNull()?.takeIf { it > 0 }?.let { startDate.plusDays(it - 1) }
+            val last = preview.lastDose()
             Text(
-                "Início: $startDate" + (endDate?.let { " · Término: $it" } ?: " · Uso contínuo"),
+                "Início: ${fmt(startDate)}" + when {
+                    last != null -> " · Última dose: ${fmt(last.toLocalDate())} às ${last.toLocalTime()}" +
+                        (total?.let { " ($it doses)" } ?: "")
+                    else -> " · Uso contínuo"
+                },
                 style = MaterialTheme.typography.bodySmall,
             )
+            if (last != null) {
+                Text(
+                    "Depois da última dose os alarmes param sozinhos e o remédio vai para \"Concluídos\".",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Lembretes ativos", Modifier.weight(1f))
@@ -214,6 +262,7 @@ fun MedicationEditScreen(
                         startDate = startDate.toString(),
                         endDate = endDate?.toString(),
                         active = active,
+                        totalDoses = total,
                     )
                     vm.saveMedication(med, isNew, onDone)
                 },
@@ -262,3 +311,5 @@ fun MedicationEditScreen(
         )
     }
 }
+
+private fun fmt(d: LocalDate): String = "%02d/%02d/%d".format(d.dayOfMonth, d.monthValue, d.year)

@@ -57,7 +57,7 @@ fun MedicationCard(med: Medication, onClick: () -> Unit) {
     Card(
         Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (med.active) MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (med.active && !med.isFinished()) MaterialTheme.colorScheme.surfaceVariant
             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         ),
     ) {
@@ -71,8 +71,10 @@ fun MedicationCard(med: Medication, onClick: () -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(med.scheduleSummary(), style = MaterialTheme.typography.bodySmall)
-                if (!med.active) Text("Pausado", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                med.endDate?.let { Text("Até $it", style = MaterialTheme.typography.labelSmall) }
+                when {
+                    med.isFinished() -> Text("Concluído", style = MaterialTheme.typography.labelSmall, color = Color(0xFF2E7D32))
+                    !med.active -> Text("Pausado", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
@@ -129,4 +131,29 @@ fun StatusChip(status: String?, late: Boolean) {
         label = { Text(label, color = color) },
         leadingIcon = { Icon(icon, null, tint = color, modifier = Modifier.size(18.dp)) },
     )
+}
+
+/** Seção recolhível com os tratamentos que já terminaram (não tocam mais). */
+fun androidx.compose.foundation.lazy.LazyListScope.finishedSection(
+    meds: List<Medication>,
+    onEdit: (String) -> Unit,
+) {
+    if (meds.isEmpty()) return
+    item(key = "finished-header") {
+        var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+        Column {
+            androidx.compose.material3.TextButton(onClick = { open = !open }) {
+                Text((if (open) "▾ " else "▸ ") + "Tratamentos concluídos (${meds.size})")
+            }
+            if (open) {
+                Text(
+                    "Não tocam mais. Toque em um para ver, reutilizar ou excluir.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 12.dp, bottom = 4.dp),
+                )
+                meds.forEach { med -> MedicationCard(med) { onEdit(med.id) } }
+            }
+        }
+    }
 }

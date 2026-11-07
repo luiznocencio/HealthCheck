@@ -85,7 +85,9 @@ fun PersonScreen(
                 if (person.meds.isEmpty() && !person.loading) {
                     item { EmptyHint("Nenhum remédio cadastrado. Toque no botão abaixo para adicionar.") }
                 }
-                items(person.meds, key = { "m" + it.id }) { med -> MedicationCard(med) { onEditMedication(med.id) } }
+                val (finished, current) = person.meds.partition { it.isFinished() }
+                items(current, key = { "m" + it.id }) { med -> MedicationCard(med) { onEditMedication(med.id) } }
+                finishedSection(finished) { onEditMedication(it) }
             }
             }
         }

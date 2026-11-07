@@ -99,6 +99,7 @@ object Repository {
                 set("start_date", med.startDate)
                 set("end_date", med.endDate)
                 set("active", med.active)
+                set("total_doses", med.totalDoses)
             }) {
                 filter { eq("id", med.id) }
             }

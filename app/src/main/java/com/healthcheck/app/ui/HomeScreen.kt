@@ -216,7 +216,8 @@ private fun MedsTab(state: UiState, onEdit: (String?) -> Unit) {
         if (state.myMeds.isEmpty()) {
             item { EmptyHint("Você ainda não tem remédios cadastrados. Toque em \"Novo remédio\".") }
         }
-        items(state.myMeds, key = { it.id }) { med ->
+        val (finished, current) = state.myMeds.partition { it.isFinished() }
+        items(current, key = { it.id }) { med ->
             val author = state.people[med.createdBy]
             Column {
                 MedicationCard(med) { onEdit(med.id) }
@@ -229,6 +230,7 @@ private fun MedsTab(state: UiState, onEdit: (String?) -> Unit) {
                 }
             }
         }
+        finishedSection(finished) { onEdit(it) }
     }
 }
 

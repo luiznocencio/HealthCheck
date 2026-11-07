@@ -46,7 +46,68 @@ data class Medication(
     @SerialName("start_date") val startDate: String = LocalDate.now().toString(),
     @SerialName("end_date") val endDate: String? = null,
     val active: Boolean = true,
+    /** Termina depois desta quantidade de doses (null = usa endDate ou uso contínuo). */
+    @SerialName("total_doses") val totalDoses: Int? = null,
 ) {
+    private fun start(): LocalDate = runCatching { LocalDate.parse(startDate) }.getOrDefault(LocalDate.now())
+    private fun end(): LocalDate? = endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+
+    /** Quantas doses do tratamento acontecem antes de [moment] (contando desde o início). */
+    fun dosesBefore(moment: LocalDateTime): Int {
+        var count = 0
+        var date = start()
+        val times = localTimes()
+        while (!date.isAfter(moment.toLocalDate())) {
+            if (isScheduledOn(date)) count += times.count { LocalDateTime.of(date, it).isBefore(moment) }
+            date = date.plusDays(1)
+        }
+        return count
+    }
+
+    /** Esta dose faz parte do tratamento? (dia certo, dentro do período e do total de doses) */
+    fun isDoseIncluded(at: LocalDateTime): Boolean {
+        if (!isScheduledOn(at.toLocalDate())) return false
+        if (at.toLocalTime() !in localTimes()) return false
+        val total = totalDoses ?: return true
+        return dosesBefore(at) < total
+    }
+
+    /** O tratamento terminou (passou da data final ou já completou o total de doses)? */
+    fun isFinished(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        val end = end()
+        if (end != null && now.toLocalDate().isAfter(end)) return true
+        val total = totalDoses ?: return false
+        return dosesBefore(now.plusSeconds(1)) >= total
+    }
+
+    /** Data/hora da última dose do tratamento, se houver um fim definido. */
+    fun lastDose(): LocalDateTime? {
+        val times = localTimes()
+        if (times.isEmpty()) return null
+        val total = totalDoses
+        if (total == null) {
+            var date = end() ?: return null
+            repeat(400) {
+                if (isScheduledOn(date)) return LocalDateTime.of(date, times.last())
+                date = date.minusDays(1)
+            }
+            return null
+        }
+        var count = 0
+        var date = start()
+        repeat(2000) {
+            if (isScheduledOn(date)) {
+                for (t in times) {
+                    count++
+                    if (count == total) return LocalDateTime.of(date, t)
+                }
+            }
+            date = date.plusDays(1)
+            val end = end()
+            if (end != null && date.isAfter(end)) return null
+        }
+        return null
+    }
     fun localTimes(): List<LocalTime> =
         times.mapNotNull { runCatching { LocalTime.parse(it) }.getOrNull() }.sorted()
 
@@ -65,7 +126,10 @@ data class Medication(
         repeat(400) {
             if (isScheduledOn(date)) {
                 val candidate = LocalDateTime.of(date, time)
-                if (candidate.isAfter(after)) return candidate.atZone(zone).toInstant()
+                if (candidate.isAfter(after)) {
+                    // Total de doses atingido: não há próxima ocorrência.
+                    return if (isDoseIncluded(candidate)) candidate.atZone(zone).toInstant() else null
+                }
             }
             date = date.plusDays(1)
             val end = endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
@@ -83,7 +147,12 @@ data class Medication(
         }
         val count = times.size
         val vezes = if (count == 1) "1 vez ao dia" else "$count vezes ao dia"
-        return "$days · $vezes · ${localTimes().joinToString(" · ") { it.toString() }}"
+        val fim = when {
+            totalDoses != null -> " · ${totalDoses} doses no total"
+            endDate != null -> " · até ${end()?.let { "%02d/%02d".format(it.dayOfMonth, it.monthValue) } ?: endDate}"
+            else -> ""
+        }
+        return "$days · $vezes · ${localTimes().joinToString(" · ") { it.toString() }}$fim"
     }
 }
 
@@ -138,9 +207,11 @@ fun buildDoses(
 ): List<DoseItem> {
     val logIndex = logs.associateBy { it.medicationId to it.scheduledInstant()?.toEpochMilli() }
     return meds.filter { it.isScheduledOn(date) }.flatMap { med ->
-        med.localTimes().map { t ->
-            val at = LocalDateTime.of(date, t).atZone(zone).toInstant()
-            DoseItem(med, t, at, logIndex[med.id to at.toEpochMilli()]?.status)
-        }
+        med.localTimes()
+            .filter { t -> med.isDoseIncluded(LocalDateTime.of(date, t)) }
+            .map { t ->
+                val at = LocalDateTime.of(date, t).atZone(zone).toInstant()
+                DoseItem(med, t, at, logIndex[med.id to at.toEpochMilli()]?.status)
+            }
     }.sortedBy { it.scheduledAt }
 }

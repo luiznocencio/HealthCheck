@@ -34,6 +34,13 @@ class AlarmReceiver : BroadcastReceiver() {
         // Remédio removido/desativado desde o agendamento: não avisa.
         if (med == null || !med.active) return
 
+        // Tratamento já terminou (data final ou total de doses): não toca e não agenda mais.
+        val at = LocalDateTime.ofInstant(Instant.ofEpochMilli(dose.scheduledAt), ZoneId.systemDefault())
+        if (!med.isDoseIncluded(at)) {
+            AlarmScheduler.cancel(context, dose)
+            return
+        }
+
         // Já marcada como tomada antes do horário: não toca, só agenda a próxima.
         if (store.isTaken(dose.medicationId, dose.scheduledAt)) {
             scheduleNext(context, intent, dose, med)

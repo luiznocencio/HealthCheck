@@ -68,6 +68,7 @@ create table if not exists public.medications (
     days_of_week  int[]  not null default '{1,2,3,4,5,6,7}',
     start_date    date   not null default current_date,
     end_date      date,
+    total_doses   int check (total_doses is null or total_doses > 0), -- termina após N doses
     active        boolean not null default true,
     created_at    timestamptz not null default now(),
     updated_at    timestamptz not null default now()
