@@ -23,6 +23,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -140,7 +144,7 @@ fun androidx.compose.foundation.lazy.LazyListScope.finishedSection(
 ) {
     if (meds.isEmpty()) return
     item(key = "finished-header") {
-        var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+        var open by rememberSaveable { mutableStateOf(false) }
         Column {
             androidx.compose.material3.TextButton(onClick = { open = !open }) {
                 Text((if (open) "▾ " else "▸ ") + "Tratamentos concluídos (${meds.size})")
